@@ -29,14 +29,22 @@ poverty = poverty.rename({'FIPStxt': 'FIPS Code'}, axis='columns')
 
 # Get mask use data
 mask_use = pd.read_csv('data/mask-use-by-county.csv')
-
 # Rename column so that the merge works correctly
 mask_use = mask_use.rename({'FIPS': 'FIPS Code'}, axis='columns')
+
+# Get cases and death information
+case_info = pd.read_csv('data/us-counties-covid-death-July.csv')
+# Rename column so that the merge works correctly
+case_info = case_info.rename({'fips': 'FIPS Code'}, axis='columns')
+
+# Now sum to get the total number of cases and deaths for each county
+case_info_totals = case_info.groupby(['FIPS Code']).sum()
 
 # Merge all data with mask use data by the County FIPS code
 data = mask_use.merge(county_education, on='FIPS Code', how='inner')
 data = data.merge(population_estimation, on='FIPS Code', how='inner')
 data = data.merge(unemployment, on='FIPS Code', how='inner')
+data = data.merge(case_info_totals, on='FIPS Code', how='inner')
 data = data.drop('FIPS Code', axis=1)
 
 # Create the preprocessor step
