@@ -6,6 +6,65 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from pandas.plotting import parallel_coordinates
+import plotly.express as px
+import plotly.io as pio
+
+def get_pipeline(clusters):
+    # Create the preprocessor step
+    # Preprocessing will scale all data appropriately since the column values have different ranges and scales
+    # dimensionality reduction step to reduce the data into important
+    # components using PCA
+    preprocessor = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("pca", PCA(n_components=3, random_state=42)),
+        ]
+    )
+
+    # The cluster step in the pipeline will run kmeans clustering
+    cluster = Pipeline(
+        [
+            (
+                "kmeans",
+                KMeans(
+                    n_clusters=clusters,
+                    init="k-means++",
+                    random_state=42
+                ),
+            ),
+        ]
+    )
+
+    # The pipeline creates an easy way for us to run all steps in Sklearn
+    # We can just fit the data to the pipeline and it will run the preprocessing
+    # step and then run the clustering algorithm
+    pipe = Pipeline(
+        [
+            ("preprocessor", preprocessor),
+            ("cluster", cluster)
+        ]
+    )
+    return pipe
+
+def get_pca_data(data, pipe):
+    pcadf = pd.DataFrame(
+        pipe["preprocessor"].transform(data),
+        columns=["component_1", "component_2", "component_3"],
+    )
+
+    # Now we get the predicted value from each instance
+    pcadf["predicted_cluster"] = pipe["cluster"]["kmeans"].labels_
+
+    return pcadf
+
+def get_centers(pipe):
+    centers = pipe["cluster"]["kmeans"].cluster_centers_
+    return centers
+
+
+palette = sns.color_palette("bright", 10)
 
 # Read in the data
 county_education = pd.read_excel('data/Education.xls', skiprows=(0, 1, 2, 3), usecols=(0, 5, 6, 43, 44, 45, 46))
@@ -47,52 +106,19 @@ data = data.merge(unemployment, on='FIPS Code', how='inner')
 data = data.merge(case_info_totals, on='FIPS Code', how='inner')
 data = data.drop('FIPS Code', axis=1)
 
-# Create the preprocessor step
-# Preprocessing will scale all data appropriately since the column values have different ranges and scales
-# dimensionality reduction step to reduce the data into important
-# components using PCA
-preprocessor = Pipeline(
-    [
-        ("scaler", StandardScaler()),
-        ("pca", PCA(n_components=3, random_state=42)),
-    ]
-)
 
-# The cluster step in the pipeline will run kmeans clustering
-cluster = Pipeline(
-    [
-        (
-            "kmeans",
-            KMeans(
-                n_clusters=4,
-                init="k-means++",
-                random_state=42,
-            ),
-        ),
-    ]
-)
-
-# The pipeline creates an easy way for us to run all steps in Sklearn
-# We can just fit the data to the pipeline and it will run the preprocessing
-# step and then run the clustering algorithm
-pipe = Pipeline(
-    [
-        ("preprocessor", preprocessor),
-        ("cluster", cluster)
-    ]
-)
-
-# Now we run all steps on our data set
+num_clusters = 4
+pipe = get_pipeline(num_clusters)
 pipe.fit(data)
+data_pca = get_pca_data(data, pipe)
+data_with_clusters = data
+data_with_clusters['predicted_cluster'] =pipe.predict(data)
 
-# Now we collect all results with the most important components from PCA
-pcadf = pd.DataFrame(
-    pipe["preprocessor"].transform(data),
-    columns=["component_1", "component_2", "component_3"],
-)
+mean_vals = data_with_clusters.groupby('predicted_cluster').mean()
+max_vals = data_with_clusters.groupby('predicted_cluster').max()
+min_vals = data_with_clusters.groupby('predicted_cluster').min()
+std_dev_vals = data_with_clusters.groupby('predicted_cluster').std()
 
-# Now we get the predicted value from each instance
-pcadf["predicted_cluster"] = pipe["cluster"]["kmeans"].labels_
 
 # Finally we plot all of our data and make it look a bit pretty
 plt.style.use("fivethirtyeight")
@@ -101,7 +127,7 @@ sns.scatterplot(
     x="component_1",
     y="component_2",
     s=50,
-    data=pcadf,
+    data=data_pca,
     hue="predicted_cluster",
     style="predicted_cluster",
     palette="Set2",
@@ -114,7 +140,7 @@ sns.scatterplot(
     x="component_1",
     y="component_3",
     s=50,
-    data=pcadf,
+    data=data_pca,
     hue="predicted_cluster",
     style="predicted_cluster",
     palette="Set2",
@@ -127,9 +153,64 @@ sns.scatterplot(
     x="component_2",
     y="component_3",
     s=50,
-    data=pcadf,
+    data=data_pca,
     hue="predicted_cluster",
     style="predicted_cluster",
     palette="Set2",
 )
 plt.show()
+
+def addAlpha(colour, alpha):
+    '''Add an alpha to the RGB colour'''
+
+    return (colour[0],colour[1],colour[2],alpha)
+
+def display_parallel_coordinates_centroids(df, num_clusters):
+    '''Display a parallel coordinates plot for the centroids in df'''
+
+    # Create the plot
+    fig = plt.figure(figsize=(12, 5))
+    title = fig.suptitle("Parallel Coordinates plot for the Centroids", fontsize=18)
+    fig.subplots_adjust(top=0.9, wspace=0)
+
+    # Draw the chart
+    parallel_coordinates(df, 'predicted_cluster', color=palette)
+
+    # Stagger the axes
+    ax=plt.gca()
+    for tick in ax.xaxis.get_major_ticks()[1::2]:
+        tick.set_pad(20)
+
+def display_parallel_coordinates(df, num_clusters):
+    '''Display a parallel coordinates plot for the clusters in df'''
+
+    # Select data points for individual clusters
+    cluster_points = []
+    for i in range(num_clusters):
+        cluster_points.append(df[df.predicted_cluster==i])
+
+    # Create the plot
+    fig = plt.figure(figsize=(12, 15))
+    title = fig.suptitle("Parallel Coordinates Plot for the Clusters", fontsize=18)
+    fig.subplots_adjust(top=0.95, wspace=0)
+
+    # Display one plot for each cluster, with the lines for the main cluster appearing over the lines for the other clusters
+    for i in range(num_clusters):
+        plt.subplot(num_clusters, 1, i+1)
+        #for j,c in enumerate(cluster_points):
+        #    if i!= j:
+        #        pc = px.parallel_coordinates(c, 'predicted_cluster')
+        pc = px.parallel_coordinates(data_frame = df, color='predicted_cluster')
+        pio.renderers.default='browser'
+        pc.show()
+
+        # Stagger the axes
+        ax=plt.gca()
+        for tick in ax.xaxis.get_major_ticks()[1::2]:
+            tick.set_pad(20)
+
+
+
+# Create a data frame containing our centroids
+display_parallel_coordinates(data_with_clusters, num_clusters)
+
