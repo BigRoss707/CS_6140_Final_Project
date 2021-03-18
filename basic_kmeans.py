@@ -6,7 +6,6 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
 from pandas.plotting import parallel_coordinates
 import plotly.express as px
 import plotly.io as pio
@@ -63,6 +62,57 @@ def get_centers(pipe):
     centers = pipe["cluster"]["kmeans"].cluster_centers_
     return centers
 
+# Some of this code modified from https://github.com/OpenClassrooms-Student-Center/Multivariate-Exploratory-Analysis
+def addAlpha(colour, alpha):
+    '''Add an alpha to the RGB colour'''
+    return (colour[0], colour[1], colour[2], alpha)
+
+def display_parallel_coordinates_centroids(df, num_clusters):
+    '''Display a parallel coordinates plot for the centroids in df'''
+
+    # Create the plot
+    fig = plt.figure(figsize=(12, 5))
+    title = fig.suptitle("Parallel Coordinates plot for the Centroids", fontsize=18)
+    fig.subplots_adjust(top=0.9, wspace=0)
+
+    # Draw the chart
+    parallel_coordinates(df, 'predicted_cluster', color=palette)
+
+    # Stagger the axes
+    ax = plt.gca()
+    for tick in ax.xaxis.get_major_ticks()[1::2]:
+        tick.set_pad(20)
+
+def display_parallel_coordinates(df, num_clusters):
+    '''Display a parallel coordinates plot for the clusters in df'''
+
+    # Select data points for individual clusters
+    cluster_points = []
+    for i in range(num_clusters):
+        cluster_points.append(df[df.predicted_cluster == i])
+
+    # Draw the chart
+    pc = px.parallel_coordinates(data_frame=df, color='predicted_cluster')
+    pio.renderers.default = 'browser'
+    pc.show()
+
+    # Stagger the axes
+    ax = plt.gca()
+    for tick in ax.xaxis.get_major_ticks()[1::2]:
+        tick.set_pad(20)
+
+def display_parallel_coordinates_centroids(df, num_clusters):
+    '''Display a parallel coordinates plot for the centroids in df'''
+
+    # Draw the chart
+    pc = px.parallel_coordinates(data_frame=df, color='predicted_cluster')
+    pio.renderers.default = 'browser'
+    pc.show()
+
+    # Stagger the axes
+    ax = plt.gca()
+    for tick in ax.xaxis.get_major_ticks()[1::2]:
+        tick.set_pad(20)
 
 palette = sns.color_palette("bright", 10)
 
@@ -112,12 +162,14 @@ pipe = get_pipeline(num_clusters)
 pipe.fit(data)
 data_pca = get_pca_data(data, pipe)
 data_with_clusters = data
-data_with_clusters['predicted_cluster'] =pipe.predict(data)
+data_with_clusters['predicted_cluster'] = pipe.predict(data)
 
-mean_vals = data_with_clusters.groupby('predicted_cluster').mean()
-max_vals = data_with_clusters.groupby('predicted_cluster').max()
-min_vals = data_with_clusters.groupby('predicted_cluster').min()
-std_dev_vals = data_with_clusters.groupby('predicted_cluster').std()
+mean_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).mean()
+max_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).max()
+min_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).min()
+std_dev_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).std()
+
+# print(mean_vals.to_markdown())
 
 
 # Finally we plot all of our data and make it look a bit pretty
@@ -160,57 +212,9 @@ sns.scatterplot(
 )
 plt.show()
 
-def addAlpha(colour, alpha):
-    '''Add an alpha to the RGB colour'''
-
-    return (colour[0],colour[1],colour[2],alpha)
-
-def display_parallel_coordinates_centroids(df, num_clusters):
-    '''Display a parallel coordinates plot for the centroids in df'''
-
-    # Create the plot
-    fig = plt.figure(figsize=(12, 5))
-    title = fig.suptitle("Parallel Coordinates plot for the Centroids", fontsize=18)
-    fig.subplots_adjust(top=0.9, wspace=0)
-
-    # Draw the chart
-    parallel_coordinates(df, 'predicted_cluster', color=palette)
-
-    # Stagger the axes
-    ax=plt.gca()
-    for tick in ax.xaxis.get_major_ticks()[1::2]:
-        tick.set_pad(20)
-
-def display_parallel_coordinates(df, num_clusters):
-    '''Display a parallel coordinates plot for the clusters in df'''
-
-    # Select data points for individual clusters
-    cluster_points = []
-    for i in range(num_clusters):
-        cluster_points.append(df[df.predicted_cluster==i])
-
-    # Create the plot
-    fig = plt.figure(figsize=(12, 15))
-    title = fig.suptitle("Parallel Coordinates Plot for the Clusters", fontsize=18)
-    fig.subplots_adjust(top=0.95, wspace=0)
-
-    # Display one plot for each cluster, with the lines for the main cluster appearing over the lines for the other clusters
-    for i in range(num_clusters):
-        plt.subplot(num_clusters, 1, i+1)
-        #for j,c in enumerate(cluster_points):
-        #    if i!= j:
-        #        pc = px.parallel_coordinates(c, 'predicted_cluster')
-        pc = px.parallel_coordinates(data_frame = df, color='predicted_cluster')
-        pio.renderers.default='browser'
-        pc.show()
-
-        # Stagger the axes
-        ax=plt.gca()
-        for tick in ax.xaxis.get_major_ticks()[1::2]:
-            tick.set_pad(20)
-
-
 
 # Create a data frame containing our centroids
 display_parallel_coordinates(data_with_clusters, num_clusters)
+
+display_parallel_coordinates_centroids(mean_vals, num_clusters)
 
