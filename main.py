@@ -32,7 +32,7 @@ mask_use = pd.read_csv('data/mask-use-by-county.csv')
 mask_use = mask_use.rename({'FIPS': 'FIPS Code'}, axis='columns')
 
 # Get cases and death information
-case_info = pd.read_csv('us-counties-covid-death-July.csv')
+case_info = pd.read_csv('data/us-counties-covid-death-July.csv')
 # Rename column so that the merge works correctly
 case_info = case_info.rename({'fips': 'FIPS Code'}, axis='columns')
 

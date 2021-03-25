@@ -142,19 +142,20 @@ mask_use = pd.read_csv('data/mask-use-by-county.csv')
 mask_use = mask_use.rename({'FIPS': 'FIPS Code'}, axis='columns')
 
 # Get cases and death information
-case_info = pd.read_csv('data/us-counties-covid-death-July.csv')
+case_info = pd.read_csv('data/us-counties-covid-death-on-August-1.csv', usecols=(2, 3, 4))
 # Rename column so that the merge works correctly
 case_info = case_info.rename({'fips': 'FIPS Code'}, axis='columns')
-
-# Now sum to get the total number of cases and deaths for each county
-case_info_totals = case_info.groupby(['FIPS Code']).sum()
 
 # Merge all data with mask use data by the County FIPS code
 data = mask_use.merge(county_education, on='FIPS Code', how='inner')
 data = data.merge(population_estimation, on='FIPS Code', how='inner')
 data = data.merge(unemployment, on='FIPS Code', how='inner')
-data = data.merge(case_info_totals, on='FIPS Code', how='inner')
+data = data.merge(case_info, on='FIPS Code', how='inner')
 data = data.drop('FIPS Code', axis=1)
+
+data['cases'] = data['cases']/data['POP_ESTIMATE_2019']
+data['deaths'] = data['deaths']/data['POP_ESTIMATE_2019']
+data = data.drop('POP_ESTIMATE_2019', axis=1)
 
 
 num_clusters = 4

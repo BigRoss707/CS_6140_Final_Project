@@ -58,7 +58,7 @@ def get_pca_data(data, pipe):
 
 def plot_elbow_method(data):
     distortions = []
-    for i in range(1, 25):      
+    for i in range(1, 25):
         pipe = get_pipeline(i)
 
         # Now we run all steps on our data set
@@ -67,7 +67,7 @@ def plot_elbow_method(data):
         # Now we get the predicted value from each instance
         inert = pipe["cluster"]["kmeans"].inertia_
 
-        distortions.append(inert)      
+        distortions.append(inert)
 
     # plot
     plt.plot(range(1, 25), distortions, marker='o')
@@ -79,7 +79,7 @@ def plot_elbow_method(data):
 ### Cite if we need to but we're using their libraries so I don't know if it is necessary
 def plot_average_silhouette(data,clusters,usePCA=True):
     for n_clusters in range(2,clusters):
-        
+
         # Create a subplot with 1 row and 1 columns
         fig, (ax1) = plt.subplots(1, 1)
         fig.set_size_inches(9, 7)
@@ -101,7 +101,7 @@ def plot_average_silhouette(data,clusters,usePCA=True):
         if usePCA:
             pcaData = get_pca_data(data, pipe)
             data = pcaData
-            
+
         #print(labels)
         # The silhouette_score gives the average value for all the samples.
         # This gives a perspective into the density and separation of the formed
@@ -147,7 +147,7 @@ def plot_average_silhouette(data,clusters,usePCA=True):
         ax1.set_xticks([-1, -0.8, -.6, -.4, -.2 , 0, 0.2, 0.4, 0.6, 0.8, 1])
 
     plt.show()
-        
+
 # Read in the data
 county_education = pd.read_excel('data/Education.xls', skiprows=(0, 1, 2, 3), usecols=(0, 5, 6, 43, 44, 45, 46))
 
@@ -174,19 +174,20 @@ mask_use = pd.read_csv('data/mask-use-by-county.csv')
 mask_use = mask_use.rename({'FIPS': 'FIPS Code'}, axis='columns')
 
 # Get cases and death information
-case_info = pd.read_csv('data/us-counties-covid-death-July.csv')
+case_info = pd.read_csv('data/us-counties-covid-death-on-August-1.csv', usecols=(2, 3, 4))
 # Rename column so that the merge works correctly
 case_info = case_info.rename({'fips': 'FIPS Code'}, axis='columns')
-
-# Now sum to get the total number of cases and deaths for each county
-case_info_totals = case_info.groupby(['FIPS Code']).sum()
 
 # Merge all data with mask use data by the County FIPS code
 data = mask_use.merge(county_education, on='FIPS Code', how='inner')
 data = data.merge(population_estimation, on='FIPS Code', how='inner')
 data = data.merge(unemployment, on='FIPS Code', how='inner')
-data = data.merge(case_info_totals, on='FIPS Code', how='inner')
+data = data.merge(case_info, on='FIPS Code', how='inner')
 data = data.drop('FIPS Code', axis=1)
+
+data['cases'] = data['cases']/data['POP_ESTIMATE_2019']
+data['deaths'] = data['deaths']/data['POP_ESTIMATE_2019']
+data = data.drop('POP_ESTIMATE_2019', axis=1)
 
 plot_elbow_method(data)
 plot_average_silhouette(data,8)
