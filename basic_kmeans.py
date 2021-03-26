@@ -186,7 +186,7 @@ max_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).max()
 min_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).min()
 std_dev_vals = data_with_clusters.groupby('predicted_cluster', as_index=False).std()
 
-#print(std_dev_vals.to_markdown())
+# print(min_vals.to_markdown())
 
 
 # Finally we plot all of our data and make it look a bit pretty

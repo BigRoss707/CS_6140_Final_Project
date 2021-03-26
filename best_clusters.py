@@ -206,5 +206,5 @@ data['Per of Cases'] = data['Per of Cases']/data['Population']
 data['Per of Deaths'] = data['Per of Deaths']/data['Population']
 
 plot_elbow_method(data)
-plot_average_silhouette(data,40)
+plot_average_silhouette(data,8)
 plot_average_silhouette(data,8,usePCA=False)
