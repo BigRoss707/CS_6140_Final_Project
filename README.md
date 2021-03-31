@@ -10,6 +10,13 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7556230/
 
 https://arxiv.org/pdf/2101.03140
 
+# DEA Tool
+
+Open Source DEA is a free Data Envelopment Analysis tool that is fairly easy to use and supports a wide array of DEA models.
+
+Installation instructions are below
+https://opensourcedea.org/installation-of-osdea-gui/
+
 # Mean Values
 
 |    |   predicted_cluster |     Never |    Rarely |   Sometimes |   Frequently |   Always |   Rural Code |   Urban Code |   Per Less than HS |   Per Only HS |   Per Some College |   Per Bachelors or Higher |   Population |   Unemployment Rate |   Per of Median HH Income |   Per in Poverty |   Per of Cases |   Per of Deaths |
