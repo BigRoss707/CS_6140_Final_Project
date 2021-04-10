@@ -15,13 +15,13 @@ def get_data():
     county_education = county_education.rename({'Percent of adults with less than a high school diploma, 2014-18': 'Per Less than HS',
                                                 'Percent of adults with a high school diploma only, 2014-18': 'Per Only HS',
                                                 'Percent of adults completing some college or associate\'s degree, 2014-18': 'Per Some College',
-                                                'Percent of adults with a bachelor\'s degree or higher, 2014-18': 'Per Bachelors or Higher',
+                                                'Percent of adults with a bachelor\'s degree or higher, 2014-18': 'Per Bachelors or High',
                                                 '2013 Rural-urban Continuum Code': 'Rural Code',
                                                 '2013 Urban Influence Code': 'Urban Code'}, axis='columns')
     county_education['Per Less than HS'] = county_education['Per Less than HS']/100
     county_education['Per Only HS'] = county_education['Per Only HS']/100
     county_education['Per Some College'] = county_education['Per Some College']/100
-    county_education['Per Bachelors or Higher'] = county_education['Per Bachelors or Higher']/100
+    county_education['Per Bachelors or High'] = county_education['Per Bachelors or High']/100
 
     # Column 0 is the FIPS code, 19 is the most recent population estimate
     population_estimation = pd.read_excel('data/PopulationEstimates.xls', skiprows=(0, 1), usecols=(0, 19))
@@ -32,11 +32,11 @@ def get_data():
     # 85 is the most recent unemployment rate, 86 is the percent of median income compared to average
     unemployment = pd.read_excel('data/Unemployment.xls', skiprows=(0, 1, 2, 3), usecols=(0, 85, 87))
     # Rename column so that the merge works correctly
-    unemployment = unemployment.rename({'fips_txt': 'FIPS Code', 'Unemployment_rate_2019': 'Unemployment Rate',
-                                        'Med_HH_Income_Percent_of_State_Total_2019': 'Per of Median HH Income'}, axis='columns')
+    unemployment = unemployment.rename({'fips_txt': 'FIPS Code', 'Unemployment_rate_2019': 'Unemployment',
+                                        'Med_HH_Income_Percent_of_State_Total_2019': 'Per Median HH Income'}, axis='columns')
     # Convert to values between 0 and 1
-    unemployment['Unemployment Rate'] = unemployment['Unemployment Rate']/100
-    unemployment['Per of Median HH Income'] = unemployment['Per of Median HH Income']/100
+    unemployment['Unemployment'] = unemployment['Unemployment']/100
+    unemployment['Per Median HH Income'] = unemployment['Per Median HH Income']/100
 
     # Column 0 is the FIPS code
     # 10 is percent of people in poverty
@@ -106,14 +106,14 @@ def get_pipeline(num_clusters):
             ("cluster", cluster)
         ]
     )
-    
+
     return pipe
 
 def get_pca_data(num_clusters):
     data = get_data()
     pipe = get_pipeline(num_clusters)
     pipe.fit(data)
-    
+
     pcadf = pd.DataFrame(
         pipe["preprocessor"].transform(data),
         columns=["component_1", "component_2", "component_3"],
@@ -124,4 +124,19 @@ def get_pca_data(num_clusters):
 
     return data, pipe, pcadf
 
-    
+def labels(num_clusters):
+    data = get_data()
+    pipe = get_pipeline(num_clusters)
+    pipe.fit(data)
+
+    pcadf = pd.DataFrame(
+        pipe["preprocessor"].transform(data),
+        columns=["component_1", "component_2", "component_3"],
+    )
+
+    # Now we get the predicted value from each instance
+    return pipe["cluster"]["kmeans"].labels_
+
+def get_centers(pipe):
+    centers = pipe["cluster"]["kmeans"].cluster_centers_
+    return centers
