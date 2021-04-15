@@ -2,33 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import matplotlib.cm as cm
-from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import silhouette_samples, silhouette_score
 from clusters import get_data
-from clusters import get_pipeline_kmeans
-from clusters import get_pca_data_kmeans
-
-def plot_elbow_method(data):
-    distortions = []
-    for i in range(1, 25):
-        pipe = get_pipeline_kmeans(i)
-
-        # Now we run all steps on our data set
-        pipe.fit(data)
-
-        # Now we get the predicted value from each instance
-        inert = pipe["cluster"]["kmeans"].inertia_
-
-        distortions.append(inert)
-
-    # plot
-    plt.plot(range(1, 25), distortions, marker='o')
-    plt.xlabel('Number of clusters')
-    plt.ylabel('Distortion')
-    plt.show()
+from clusters import get_pipeline_hierarchical
+from clusters import get_pca_data_hierarchical
 
 ### A lot of this comes from https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html
 ### Cite if we need to but we're using their libraries so I don't know if it is necessary
@@ -48,13 +28,13 @@ def plot_average_silhouette(data,clusters,usePCA=True):
 
         # Initialize the clusterer with n_clusters value and a random generator
         # seed of 10 for reproducibility.
-        pipe = get_pipeline_kmeans(n_clusters)
+        pipe = get_pipeline_hierarchical(n_clusters)
         pipe.fit(data)
 
         # Now we get the predicted value from each instance
-        labels = pipe["cluster"]["kmeans"].labels_
+        labels = pipe["cluster"]["Hierarchical_clustering"].labels_
         if usePCA:
-            data, pipe, pcaData = get_pca_data_kmeans(n_clusters)
+            data, pipe, pcaData = get_pca_data_hierarchical(n_clusters)
             data = pcaData
 
         #print(labels)
@@ -104,6 +84,5 @@ def plot_average_silhouette(data,clusters,usePCA=True):
     plt.show()
 
 data = get_data()
-plot_elbow_method(data)
 plot_average_silhouette(data,8)
 plot_average_silhouette(data,8,usePCA=False)

@@ -9,9 +9,9 @@ import plot
 data = clusters.get_data()
 
 num_clusters = 4
-pipe = clusters.get_pipeline(num_clusters)
+pipe = clusters.get_pipeline_kmeans(num_clusters)
 pipe.fit(data)
-_, _, data_pca = clusters.get_pca_data(num_clusters)
+_, _, data_pca = clusters.get_pca_data_kmeans(num_clusters)
 data_with_clusters = data
 data_with_clusters['predicted_cluster'] = pipe.predict(data)
 
@@ -34,6 +34,7 @@ sns.scatterplot(
     style="predicted_cluster",
     palette="Set2",
 )
+plt.title("K-Means clustering")
 plt.show()
 
 plt.style.use("fivethirtyeight")
@@ -47,6 +48,7 @@ sns.scatterplot(
     style="predicted_cluster",
     palette="Set2",
 )
+plt.title("K-Means clustering")
 plt.show()
 
 plt.style.use("fivethirtyeight")
@@ -60,8 +62,15 @@ sns.scatterplot(
     style="predicted_cluster",
     palette="Set2",
 )
+plt.title("K-Means clustering")
 plt.show()
 
+
+plt.style.use("fivethirtyeight")
+plt.figure(figsize=(8, 8))
+ax = plt.axes(projection='3d')
+ax.scatter3D(data_pca['component_1'], data_pca['component_2'], data_pca['component_3'], c=data_pca['predicted_cluster'], cmap='Greens')
+plt.show()
 
 # Create a data frame containing our centroids
 plot.display_parallel_coordinates(data_with_clusters, num_clusters)

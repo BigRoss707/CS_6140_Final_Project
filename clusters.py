@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.cm as cm
 from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -71,7 +72,7 @@ def get_data():
 
 ##YOU STILL NEED TO FIT THE DATA TO THE PIPELINE
 ##Returns the pipeline for the data with a number of clusters = num_clusters
-def get_pipeline(num_clusters):
+def get_pipeline_kmeans(num_clusters):
     # Create the preprocessor step
     # Preprocessing will scale all data appropriately since the column values have different ranges and scales
     # dimensionality reduction step to reduce the data into important
@@ -109,9 +110,45 @@ def get_pipeline(num_clusters):
 
     return pipe
 
-def get_pca_data(num_clusters):
+def get_pipeline_hierarchical(num_clusters):
+    # Create the preprocessor step
+    # Preprocessing will scale all data appropriately since the column values have different ranges and scales
+    # dimensionality reduction step to reduce the data into important
+    # components using PCA
+    preprocessor = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("pca", PCA(n_components=3, random_state=42)),
+        ]
+    )
+
+    # The cluster step in the pipeline will run kmeans clustering
+    cluster = Pipeline(
+        [
+            (
+                "Hierarchical_clustering",
+                AgglomerativeClustering(
+                    n_clusters=num_clusters,
+                ),
+            ),
+        ]
+    )
+
+    # The pipeline creates an easy way for us to run all steps in Sklearn
+    # We can just fit the data to the pipeline and it will run the preprocessing
+    # step and then run the clustering algorithm
+    pipe = Pipeline(
+        [
+            ("preprocessor", preprocessor),
+            ("cluster", cluster)
+        ]
+    )
+
+    return pipe
+
+def get_pca_data_kmeans(num_clusters):
     data = get_data()
-    pipe = get_pipeline(num_clusters)
+    pipe = get_pipeline_kmeans(num_clusters)
     pipe.fit(data)
 
     pcadf = pd.DataFrame(
@@ -124,9 +161,24 @@ def get_pca_data(num_clusters):
 
     return data, pipe, pcadf
 
-def labels(num_clusters):
+def get_pca_data_hierarchical(num_clusters):
     data = get_data()
-    pipe = get_pipeline(num_clusters)
+    pipe = get_pipeline_hierarchical(num_clusters)
+    pipe.fit(data)
+
+    pcadf = pd.DataFrame(
+        pipe["preprocessor"].transform(data),
+        columns=["component_1", "component_2", "component_3"],
+    )
+
+    # Now we get the predicted value from each instance
+    pcadf["predicted_cluster"] = pipe["cluster"]["Hierarchical_clustering"].labels_
+
+    return data, pipe, pcadf
+
+def labels_kmeans(num_clusters):
+    data = get_data()
+    pipe = get_pipeline_kmeans(num_clusters)
     pipe.fit(data)
 
     pcadf = pd.DataFrame(
@@ -136,6 +188,19 @@ def labels(num_clusters):
 
     # Now we get the predicted value from each instance
     return pipe["cluster"]["kmeans"].labels_
+
+def labels_hierarchical(num_clusters):
+    data = get_data()
+    pipe = get_pipeline_hierarchical(num_clusters)
+    pipe.fit(data)
+
+    pcadf = pd.DataFrame(
+        pipe["preprocessor"].transform(data),
+        columns=["component_1", "component_2", "component_3"],
+    )
+
+    # Now we get the predicted value from each instance
+    return pipe["cluster"]["Hierarchical_clustering"].labels_
 
 def get_centers(pipe):
     centers = pipe["cluster"]["kmeans"].cluster_centers_

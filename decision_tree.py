@@ -6,4 +6,4 @@ num_clusters = 4
 data = clusters.get_data()
 
 tree = DecisionTreeClassifier(criterion="entropy", max_depth=10)
-tree.fit(data, clusters.labels(num_clusters))
+tree.fit(data, clusters.labels_kmeans(num_clusters))
